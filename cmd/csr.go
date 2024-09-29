@@ -72,7 +72,7 @@ func runCreateCsr(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	signer, err := generateSigner(privfile)
+	signer, err := generateSigner(privfile, reader)
 	if err != nil {
 		fmt.Println("Error generating signer:", err)
 		return
@@ -126,8 +126,13 @@ func runCreateCsr(cmd *cobra.Command, args []string) {
 	}
 }
 
-func generateSigner(privfile string) (crypto.Signer, error) {
-	priv, err := pemutil.Read(privfile)
+func generateSigner(privfile string, reader *bufio.Reader) (crypto.Signer, error) {
+	priv, err := pemutil.Read(privfile, pemutil.WithPasswordPrompt("Please enter the password to decrypt the private key", func(s string) ([]byte, error) {
+		fmt.Print("Enter Password: ")
+		input, _ := reader.ReadString('\n')
+		pass := strings.TrimSuffix(input, "\n")
+		return []byte(pass), nil
+	}))
 	if err != nil {
 		return nil, errors.Join(errors.New("error reading private key"), err)
 	}
